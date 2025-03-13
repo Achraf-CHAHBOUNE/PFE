@@ -4,10 +4,10 @@ from config import SOURCE_MYSQL_HOST, SOURCE_MYSQL_USER, SOURCE_MYSQL_PASSWORD, 
 
 
 # Database connection details
-DB_HOST = "your_host"
-DB_USER = "your_username"
-DB_PASSWORD = "your_password"
-DB_NAME = "your_database_name"
+DB_HOST = SOURCE_MYSQL_HOST
+DB_USER = SOURCE_MYSQL_USER
+DB_PASSWORD = SOURCE_MYSQL_PASSWORD
+DB_NAME = SECOND_MYSQL_DB
 
 # File paths
 input_files = {
