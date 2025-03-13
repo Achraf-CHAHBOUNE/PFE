@@ -2,7 +2,6 @@ import mysql.connector
 import csv
 from config import SOURCE_MYSQL_HOST, SOURCE_MYSQL_USER, SOURCE_MYSQL_PASSWORD, SECOND_MYSQL_DB
 
-
 # Database connection details
 DB_HOST = SOURCE_MYSQL_HOST
 DB_USER = SOURCE_MYSQL_USER
@@ -22,32 +21,25 @@ output_files = {
     "mgw": "./data/our_data/table_sizes_mgw.csv"
 }
 
-def get_table_size(table_name):
-    """Returns the size of a given table in MB from MySQL."""
-    conn = mysql.connector.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME
-    )
+def get_table_size(table_name, conn):
+    """Fetch size of a single table in MB."""
     cursor = conn.cursor()
-
-    query = f"""
+    
+    query = """
     SELECT ROUND(((data_length + index_length) / 1024 / 1024), 2) AS size_mb
     FROM information_schema.tables
-    WHERE table_schema = '{DB_NAME}' AND table_name = '{table_name}';
+    WHERE table_schema = %s AND table_name = %s;
     """
-
-    cursor.execute(query)
+    
+    cursor.execute(query, (DB_NAME, table_name))
     result = cursor.fetchone()
     
     cursor.close()
-    conn.close()
-
+    
     return result[0] if result else 0  # Return 0 if table doesn't exist
 
-def process_table_sizes(input_file, output_file):
-    """Reads table names, gets their sizes, and saves them to a CSV file."""
+def process_table_sizes(input_file, output_file, conn):
+    """Reads table names, retrieves sizes, and writes to a CSV file."""
     with open(input_file, "r") as file:
         table_names = file.read().splitlines()
 
@@ -55,7 +47,7 @@ def process_table_sizes(input_file, output_file):
     total_size = 0
 
     for table in table_names:
-        size = get_table_size(table)
+        size = get_table_size(table, conn)
         table_sizes.append([table, size])
         total_size += size
 
@@ -68,6 +60,17 @@ def process_table_sizes(input_file, output_file):
 
     print(f"✅ Table sizes saved to {output_file}")
 
+# Open database connection once
+conn = mysql.connector.connect(
+    host=DB_HOST,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME
+)
+
 # Process each file
 for key in input_files:
-    process_table_sizes(input_files[key], output_files[key])
+    process_table_sizes(input_files[key], output_files[key], conn)
+
+# Close the connection after all queries
+conn.close()
